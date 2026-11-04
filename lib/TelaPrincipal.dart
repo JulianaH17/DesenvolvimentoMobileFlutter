@@ -1,11 +1,53 @@
 import "package:flutter/material.dart";
 
-class Telaprincipal extends StatelessWidget {
-  const Telaprincipal({super.key});   //construtor da nossa classe
+class Telaprincipal extends StatefulWidget {
+  const Telaprincipal({super.key}); //construtor da nossa classe
+
+  @override
+  State<Telaprincipal> createState() => _TelaprincipalState();
+}
+
+//classe feita para o campo de pesquisa funcional
+class _TelaprincipalState extends State<Telaprincipal> {
+
+  final pesquisa = TextEditingController();
+  String? mensagemErro;
+
+  void validarPesquisa(String valor) {
+    setState(() {
+      if (valor.trim().isEmpty) {
+        mensagemErro = "Preencha o campo vazio!";
+      } else if (valor.trim().length < 3) {
+        mensagemErro = "Escreva ao menos 3 caracteres!";
+      } else {
+        mensagemErro = null;
+      }
+    });
+  }
+
+  void confirmarPesquisa() {
+    validarPesquisa(pesquisa.text);
+
+    if (mensagemErro == null) {
+      final texto = pesquisa.text.trim();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Buscando por: $texto"))
+      );
+
+      pesquisa.clear();
+    }
+  }
+
+  @override
+  void dispose() {
+    pesquisa.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(  //fornece a estrutura básica de uma tela
+    return Scaffold( //fornece a estrutura básica de uma tela
       appBar: AppBar(
         title: const Text("Saborê"),
         backgroundColor: Colors.yellow.shade300,
@@ -74,11 +116,34 @@ class Telaprincipal extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12),
                 ),
 
-                child: const Row(
+                child: Row(
                   children: [
-                    Icon(Icons.search, color: Colors.grey),
-                    SizedBox(width: 12),
-                    Text("Pesquisar receitas..."),
+                    const Icon(
+                      Icons.search,
+                      color: Colors.grey,
+                      size: 24,
+                    ),
+
+                    const SizedBox(width: 8,),
+
+                    Expanded(
+                      child: TextField(
+                        controller: pesquisa, //variável criada lá no começo na outra classe stateful
+                        decoration: InputDecoration(
+                          labelText: "Pesquisar receitas",
+                          errorText: mensagemErro,
+                          border: const OutlineInputBorder(),
+                        ),
+                        onChanged: validarPesquisa,
+                      ),
+                    ),
+
+                    const SizedBox(width: 12,),
+
+                    FilledButton(
+                      onPressed: confirmarPesquisa,
+                      child: const Text("Procurar"),
+                    ),
                   ],
                 ),
               ),
