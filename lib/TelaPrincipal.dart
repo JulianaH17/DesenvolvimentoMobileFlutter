@@ -1,4 +1,6 @@
 import "package:flutter/material.dart";
+import 'package:aplicativosabore/Receita.dart';
+import 'package:aplicativosabore/DetalhesReceitas.dart';
 
 class Telaprincipal extends StatefulWidget {
   const Telaprincipal({super.key}); //construtor da nossa classe
@@ -47,6 +49,19 @@ class _TelaprincipalState extends State<Telaprincipal> {
 
   @override
   Widget build(BuildContext context) {
+    //receitas que eu tinha colocado antes
+    const bolo = Receita(
+      nome: 'Bolo de Cenoura',
+      descricao: 'Um bolinho pra se comer no final da tarde, delicioso e fofinho.',
+      ingredientes: ['Cenoura', 'Farinha', 'Açúcar', 'Ovos', 'Fermento', 'Óleo'],
+    );
+
+    const costela = Receita(
+      nome: 'Costela Assada no Forno',
+      descricao: 'Costela preparada no forno.',
+      ingredientes: ['Costela', 'Sal', 'Alho'],
+    );
+
     return Scaffold( //fornece a estrutura básica de uma tela
       appBar: AppBar(
         title: const Text("Saborê"),
@@ -130,7 +145,7 @@ class _TelaprincipalState extends State<Telaprincipal> {
                       child: TextField(
                         controller: pesquisa, //variável criada lá no começo na outra classe stateful
                         decoration: InputDecoration(
-                          labelText: "Pesquisar receitas",
+                          hintText: "Pesquisar receitas",
                           errorText: mensagemErro,
                           border: const OutlineInputBorder(),
                         ),
@@ -188,12 +203,23 @@ class _TelaprincipalState extends State<Telaprincipal> {
 
               const SizedBox(height: 16),
 
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
+              FilledButton(
+                style: FilledButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  foregroundColor: Colors.black,
+                  padding: const EdgeInsets.all(16),
                 ),
+
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => Detalhesreceitas(
+                        receita: bolo,
+                      ),
+                    ),
+                  );
+                },
 
                 child: const Row(
                   children: [
@@ -202,6 +228,7 @@ class _TelaprincipalState extends State<Telaprincipal> {
                       size: 40,
                       color: Colors.grey,
                     ),
+
                     SizedBox(width: 16),
 
                     Expanded(
@@ -216,12 +243,23 @@ class _TelaprincipalState extends State<Telaprincipal> {
 
               const SizedBox(height: 12),
 
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
+              FilledButton(
+                style: FilledButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  foregroundColor: Colors.black,
+                  padding: const EdgeInsets.all(16),
                 ),
+
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => Detalhesreceitas(
+                        receita: costela,
+                      ),
+                    ),
+                  );
+                },
 
                 child: const Row(
                   children: [
@@ -230,6 +268,7 @@ class _TelaprincipalState extends State<Telaprincipal> {
                       size: 40,
                       color: Colors.grey,
                     ),
+
                     SizedBox(width: 16),
 
                     Expanded(
