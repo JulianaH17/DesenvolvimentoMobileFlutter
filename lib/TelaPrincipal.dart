@@ -1,6 +1,7 @@
 import "package:flutter/material.dart";
 import 'package:aplicativosabore/Receita.dart';
 import 'package:aplicativosabore/DetalhesReceitas.dart';
+import 'package:aplicativosabore/Utils/Request.dart';
 
 class Telaprincipal extends StatefulWidget {
   const Telaprincipal({super.key}); //construtor da nossa classe
@@ -14,6 +15,40 @@ class _TelaprincipalState extends State<Telaprincipal> {
 
   final pesquisa = TextEditingController();
   String? mensagemErro;
+  List<Receita> receitas = [];
+  bool carregando = true;
+  bool mostrarTodas = false;
+
+  @override
+  void initState() {
+    super.initState();
+    carregarReceitas();
+  }
+
+  Future<void> carregarReceitas() async {
+    try {
+      final resultado = await carregar();
+
+      setState(() {
+        receitas = resultado;
+        carregando = false;
+      });
+    } catch (e) {
+      setState(() {
+        mensagemErro = 'Não foi possível carregar as receitas.';
+        carregando = false;
+      });
+    }
+  }
+
+  Future<void> verTodasReceitas() async {
+    setState(() {
+      mostrarTodas = true;
+      carregando = true;
+    });
+
+    await carregarReceitas();
+  }
 
   void validarPesquisa(String valor) {
     setState(() {
@@ -27,17 +62,41 @@ class _TelaprincipalState extends State<Telaprincipal> {
     });
   }
 
-  void confirmarPesquisa() {
-    validarPesquisa(pesquisa.text);
+  Future<void> confirmarPesquisa() async {
+    final texto = pesquisa.text.trim();
 
-    if (mensagemErro == null) {
-      final texto = pesquisa.text.trim();
+    validarPesquisa(texto);
 
-      ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Buscando por: $texto"))
-      );
+    if (texto.isEmpty || texto.length < 3) {
+      return;
+    }
 
-      pesquisa.clear();
+    setState(() {
+      carregando = true;
+      mensagemErro = null;
+    });
+
+    try {
+      final resultado = await pesquisar(texto);
+
+      setState(() {
+        receitas = resultado;
+        carregando = false;
+      });
+
+      if (resultado.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Nenhuma receita encontrada.'),
+          ),
+        );
+      }
+
+    } catch (e) {
+      setState(() {
+        carregando = false;
+        mensagemErro = 'Erro ao pesquisar receitas.';
+      });
     }
   }
 
@@ -49,20 +108,8 @@ class _TelaprincipalState extends State<Telaprincipal> {
 
   @override
   Widget build(BuildContext context) {
-    //receitas que eu tinha colocado antes
-    const bolo = Receita(
-      nome: 'Bolo de Cenoura',
-      descricao: 'Um bolinho pra se comer no final da tarde, delicioso e fofinho.',
-      ingredientes: ['Cenoura', 'Farinha', 'Açúcar', 'Ovos', 'Fermento', 'Óleo'],
-    );
 
-    const costela = Receita(
-      nome: 'Costela Assada no Forno',
-      descricao: 'Costela preparada no forno.',
-      ingredientes: ['Costela', 'Sal', 'Alho'],
-    );
-
-    return Scaffold( //fornece a estrutura básica de uma tela
+    return Scaffold(
       appBar: AppBar(
         title: const Text("Saborê"),
         backgroundColor: Colors.yellow.shade300,
@@ -139,11 +186,11 @@ class _TelaprincipalState extends State<Telaprincipal> {
                       size: 24,
                     ),
 
-                    const SizedBox(width: 8,),
+                    const SizedBox(width: 8),
 
                     Expanded(
                       child: TextField(
-                        controller: pesquisa, //variável criada lá no começo na outra classe stateful
+                        controller: pesquisa,
                         decoration: InputDecoration(
                           hintText: "Pesquisar receitas",
                           errorText: mensagemErro,
@@ -153,7 +200,7 @@ class _TelaprincipalState extends State<Telaprincipal> {
                       ),
                     ),
 
-                    const SizedBox(width: 12,),
+                    const SizedBox(width: 12),
 
                     FilledButton(
                       onPressed: confirmarPesquisa,
@@ -165,29 +212,33 @@ class _TelaprincipalState extends State<Telaprincipal> {
 
               const SizedBox(height: 16),
 
-              Container(
-                padding: const EdgeInsets.all(16),
+              InkWell(
+                onTap: verTodasReceitas,
 
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade600,
-                  borderRadius: BorderRadius.circular(12),
-                ),
+                child: Container(
+                  padding: const EdgeInsets.all(16),
 
-                child: const Row(
-                  children: [
-                    Icon(
-                      Icons.menu_book,
-                      color: Colors.white,
-                    ),
-                    SizedBox(width: 8),
-                    Text(
-                      "Ver todas as receitas disponíveis",
-                      style: TextStyle(
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade600,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+
+                  child: const Row(
+                    children: [
+                      Icon(
+                        Icons.menu_book,
                         color: Colors.white,
-                        fontSize: 16,
                       ),
-                    ),
-                  ],
+                      SizedBox(width: 8),
+                      Text(
+                        "Ver todas as receitas disponíveis",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
 
@@ -203,83 +254,59 @@ class _TelaprincipalState extends State<Telaprincipal> {
 
               const SizedBox(height: 16),
 
-              FilledButton(
-                style: FilledButton.styleFrom(
-                  backgroundColor: Colors.white,
-                  foregroundColor: Colors.black,
-                  padding: const EdgeInsets.all(16),
-                ),
+              // Exibição das receitas recebidas da API
+              if (carregando)
+                const CircularProgressIndicator()
 
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => Detalhesreceitas(
-                        receita: bolo,
+              else if (receitas.isEmpty)
+                const Text('Nenhuma receita encontrada.')
+
+              else
+                Column(
+                  children: (mostrarTodas ? receitas : receitas.take(2)).map((receita) {
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+
+                      child: FilledButton(
+                        style: FilledButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          foregroundColor: Colors.black,
+                          padding: const EdgeInsets.all(16),
+                        ),
+
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => Detalhesreceitas(
+                                receita: receita,
+                              ),
+                            ),
+                          );
+                        },
+
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.restaurant,
+                              size: 40,
+                              color: Colors.grey,
+                            ),
+
+                            const SizedBox(width: 16),
+
+                            Expanded(
+                              child: Text(
+                                "${receita.nome}\nTempo de preparo: ${receita.tempoPreparo ?? 'Não informado'} minutos",
+                                style: const TextStyle(fontSize: 16),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                  );
-                },
-
-                child: const Row(
-                  children: [
-                    Icon(
-                      Icons.restaurant,
-                      size: 40,
-                      color: Colors.grey,
-                    ),
-
-                    SizedBox(width: 16),
-
-                    Expanded(
-                      child: Text(
-                        "Bolo de Cenoura\nTempo de preparo: 30~45 minutos",
-                        style: TextStyle(fontSize: 16),
-                      ),
-                    ),
-                  ],
+                    );
+                  }).toList(),
                 ),
-              ),
-
-              const SizedBox(height: 12),
-
-              FilledButton(
-                style: FilledButton.styleFrom(
-                  backgroundColor: Colors.white,
-                  foregroundColor: Colors.black,
-                  padding: const EdgeInsets.all(16),
-                ),
-
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => Detalhesreceitas(
-                        receita: costela,
-                      ),
-                    ),
-                  );
-                },
-
-                child: const Row(
-                  children: [
-                    Icon(
-                      Icons.restaurant,
-                      size: 40,
-                      color: Colors.grey,
-                    ),
-
-                    SizedBox(width: 16),
-
-                    Expanded(
-                      child: Text(
-                        "Costela Assada no Forno\nTempo de preparo: 3~4 horas",
-                        style: TextStyle(fontSize: 16),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
             ],
           ),
         ),
